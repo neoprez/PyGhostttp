@@ -27,30 +27,29 @@ class Client(object):
         request = urllib2.Request(self.base_url + path, data=data, headers=self.headers)
         return urllib2.urlopen(request)
 
-    @staticmethod
-    def __to_client_response(response):
-        info = response.info()
-        url = response.geturl()
-        code = response.getcode()
-
-        if 'application/json' in info['Content-Type']:
-            data = json.loads(response.read())
-        else:
-            data = response.read()
-
-        return ClientResponse(url, info, data, code)
+    def __handle_request(self, path, data):
+        try:
+            response = self.__open(path, data)
+            info = response.info()
+            if 'application/json' in info['Content-Type']:
+                response_data = json.loads(response.read())
+            else:
+                response_data = response.read()
+            return ClientResponse(response.geturl(), info, response_data, response.getcode())
+        except urllib2.HTTPError as http_error:
+            return ClientResponse(self.base_url + path, http_error.info(), http_error.read(), http_error.code)
 
     def post(self, path, data):
         if self.headers and 'application/json' in self.headers['Content-Type']:
             data = json.dumps(data)
         else:
             data = urllib.urlencode(data)
-        return Client.__to_client_response(self.__open(path, data))
+        return self.__handle_request(path, data)
 
     def get(self, path, data=None):
         if data:
             path = path + "?" + urllib.urlencode(data)
-        return Client.__to_client_response(self.__open(path, data))
+        return self.__handle_request(path, data)
 
 
 class TestableClientResponse(ClientResponse):
