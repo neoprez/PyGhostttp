@@ -9,6 +9,10 @@ if __name__ == '__main__':
 
     c = TestableClient('http://127.0.0.1:5000', headers=HEADERS)
 
-    response = c.post('/hello-post', data={'name': 'Rodny'})
+    response = c.get('/hello-json')
+
+    body = response.body()
+    expect = body.contains({"hello": "world"})
 
     print response.is_2xx_response()
+    print expect.is_pass(), expect.get_reason()
